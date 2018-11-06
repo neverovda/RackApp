@@ -7,8 +7,7 @@ class AppLogger
   end
 
   def call(env)
-    params = Rack::Utils.parse_nested_query env['QUERY_STRING']
-    @logger.info params
+    @logger.info env
     @app.call(env)
   end
 end

@@ -2,36 +2,31 @@ require_relative 'app/time_format'
 
 class App
   def call(env)
-    path = [env['REQUEST_METHOD'], env['REQUEST_PATH']]
-    if paths.key?(path)
-      controller = paths[path][:controller]
-      method = paths[path][:method]
-      response_params = controller.new(env['QUERY_STRING']).send(method)
+    request = Rack::Request.new(env)
+
+    if request.get? && request.path == '/time'
+      time_format(request.params)
     else
-      response_params = not_found
+      make_response(404, ["Not found\n"])
     end
-    make_response(response_params)
   end
 
   private
+
+  def time_format(params)
+    formatter = TimeFormat.new(params)
+    if formatter.valid?
+      make_response 200, ["#{formatter.time}\n"]
+    else
+      make_response 400, ["Unknows time formats [#{formatter.invalid_params.join(', ')}]\n"]
+    end
+  end
 
   def headers
     { 'Content-Type' => 'text/plain' }
   end
 
-  def paths
-    { ['GET', '/time'] => { controller: TimeFormat, method: :get } }
-  end
-
-  def not_found
-    { code: 404, body: ['Not found'] }
-  end
-
-  def make_response(params)
-    [
-      params[:code],
-      headers,
-      params[:body]
-    ]
+  def make_response(code, body)
+    [code, headers, body]
   end
 end

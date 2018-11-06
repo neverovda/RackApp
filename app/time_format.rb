@@ -1,54 +1,32 @@
 class TimeFormat
-  def initialize(query_string)
-    @params = Rack::Utils.parse_nested_query query_string
+  DEFAULT_COMPOSITION = %w[year month day].freeze
+  FORMAT_MAPPING = { 'year' => '%Y', 'month' => '%m', 'day' => '%d',
+                     'hour' => '%H', 'minute' => '%M', 'second' => '%S' }.freeze
+
+  def initialize(params)
+    @composition_format = if params.key?('format')
+                            params['format'].split(',')
+                          else
+                            DEFAULT_COMPOSITION
+                          end
   end
 
-  def get
-    return unknows_format if unknows_format
-    required_format
+  def valid?
+    invalid_params.empty?
+  end
+
+  def time
+    Time.now.strftime(string_format_time)
+  end
+
+  def invalid_params
+    @invalid_params ||= @composition_format - FORMAT_MAPPING.keys
   end
 
   private
 
-  def unknows_format
-    unknows_formats = composition_format - hash_time.keys
-    return unless unknows_formats.any?
-    body = ["Unknows time formats [#{unknows_formats.join(', ')}]\n"]
-    { code: 400, body: body }
-  end
-
-  def required_format
-    response = []
-    composition_format.each do |format|
-      response << hash_time[format] if hash_time.key?(format)
-    end
-    body = ["#{response.join('-')}\n"]
-    { code: 200, body: body }
-  end
-
-  attr_reader :params
-
-  def composition_format
-    return @composition_format if @composition_format
-    @composition_format = if params.key?('format')
-                            params['format'].split(',')
-                          else
-                            default_composition
-                          end
-  end
-
-  def default_composition
-    %w[year month day]
-  end
-
-  def hash_time
-    return @hash_time if @hash_time
-    time = Time.now
-    @hash_time = { 'year' => time.year,
-                   'month' => time.mon,
-                   'day' => time.day,
-                   'hour' => time.hour,
-                   'minute' => time.min,
-                   'second' => time.sec }
+  def string_format_time
+    @composition_format.select { |format| FORMAT_MAPPING.key?(format) }
+                       .map { |format| FORMAT_MAPPING[format] }.join('-')
   end
 end
