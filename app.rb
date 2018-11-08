@@ -7,7 +7,7 @@ class App
     if request.get? && request.path == '/time'
       time_format(request.params)
     else
-      make_response(404, ["Not found\n"])
+      make_response 404, 'Not found'
     end
   end
 
@@ -16,9 +16,9 @@ class App
   def time_format(params)
     formatter = TimeFormat.new(params)
     if formatter.valid?
-      make_response 200, ["#{formatter.time}\n"]
+      make_response 200, formatter.time.to_s
     else
-      make_response 400, ["Unknows time formats [#{formatter.invalid_params.join(', ')}]\n"]
+      make_response 400, "Unknows time formats [#{formatter.invalid_params.join(', ')}]"
     end
   end
 
@@ -26,7 +26,7 @@ class App
     { 'Content-Type' => 'text/plain' }
   end
 
-  def make_response(code, body)
-    [code, headers, body]
+  def make_response(code, text_body)
+    [code, headers, [text_body + "\n"]]
   end
 end
